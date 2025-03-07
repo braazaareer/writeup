@@ -29,6 +29,7 @@ a0c[22] equals "Malware"
 This value should be entered in the third text area (d).
 
 Select the picture at  5
+
 Enter the following values in the respective text areas:
 First text area: "FLARE On"
 Second text area: "Security Expert"
