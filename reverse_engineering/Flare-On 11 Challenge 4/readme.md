@@ -28,6 +28,8 @@ This value should be entered in the second text area (c).
 a0c[22] equals "Malware"
 This value should be entered in the third text area (d).
 
+
+## get flag
 Select the picture at  5
 
 Enter the following values in the respective text areas:
