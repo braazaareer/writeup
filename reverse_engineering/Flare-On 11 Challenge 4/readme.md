@@ -21,8 +21,10 @@ By inspecting the contents of a0c, I identified the following values:
 
 a0c[14] equals "FLARE On"
 This value should be entered in the first text area (b).
+
 a0c[25] equals "Security Expert"
 This value should be entered in the second text area (c).
+
 a0c[22] equals "Malware"
 This value should be entered in the third text area (d).
 
