@@ -101,7 +101,7 @@ provides information about all files loaded in the debugging session (including 
   - **If true:** It proceeds to call the proper decryption function.
 
 - **Indication of ChaCha20:**  
-  Inside the first function, strings indicating the expansion of a 32‑byte key are present. Since ChaCha20 uses a 32‑byte key and a 12‑byte nonce, this strongly indicates that ChaCha20 is in use.
+  Inside the first function, strings _(expand 32-byte k)_ indicating the expansion of a 32‑byte key are present. Since ChaCha20 uses a 32‑byte key and a 12‑byte nonce, this strongly indicates that ChaCha20 is in use.
 
 ### Extraction of Key, Nonce, and Encrypted Shellcode
 
