@@ -158,6 +158,7 @@ By running `strace` on `shellcode_runner`, I observed that the shellcode attempt
 - **12 bytes:** (Same as the ChaCha20 nonce)
 
 These observations reinforced that ChaCha20 is used again by the shellcode.
+
  ![strace](./images/strace_pic)
 
 ---
