@@ -26,8 +26,8 @@ This challenge presents a partial Linux filesystem (extracted from a tar archive
   ```
   sshd.core.93794.0.0.11.1725917676: ELF 64-bit LSB core file, x86-64, version 1 (SYSV), SVR4-style, from 'sshd: root [priv]', real uid: 0, effective uid: 0, real gid: 0, effective gid: 0, execfn: '/usr/sbin/sshd', platform: 'x86_64'
   ```
-  1. '/usr/sbin/sshd'
-  2. from 'sshd: root [priv]'
+  -'/usr/sbin/sshd'
+  - from 'sshd: root [priv]'
   This confirms it's a core dump from the sshd process, running as root
 
 ---
