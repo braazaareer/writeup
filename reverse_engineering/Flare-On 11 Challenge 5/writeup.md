@@ -108,6 +108,7 @@ I searched the coredump for the magic number and found this block of hexadecimal
 487a40c5943df638a81813e2de6318a507f9a0ba2dbb8a7ba63666d08d11a65ec914d66ff236839f4dcd711a52862955
 ```
 This data splits into:
+
    1- **4 bytes:** Magic number  
    2- **32 bytes:** ChaCha20 key  
    3- **12 bytes:** Nonce
