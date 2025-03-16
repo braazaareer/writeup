@@ -69,7 +69,7 @@ info files
 ```
 provides information about all files loaded in the debugging session (including the executable, shared libraries, etc.). After reviewing the output, I found that the address belongs to:
 ```
-/lib/x86_64-linux-gnu/liblzma.so.5
+/lib/x86_64-linux-gnu/liblzma.so.5.4.1
 ```
 
 - **Offset Calculation:**  
@@ -79,7 +79,7 @@ provides information about all files loaded in the debugging session (including 
   ```
   0x7f4a18c86000 --> base address for deleted file
   
-  Opening `liblzma.so.5` in Ghidra and navigating to this offset revealed the function where the crash occurred.
+  Opening `liblzma.so.5.4.1` in Ghidra and navigating to this offset revealed the function where the crash occurred.
   
   ![ghidra_pic](./images/ghidra_pic)
 
@@ -159,6 +159,7 @@ By running `strace` on `shellcode_runner`, I observed that the shellcode attempt
 - **12 bytes:** (Same as the ChaCha20 nonce)
 
 These observations reinforced that ChaCha20 is used again by the shellcode.
+ ![strace](./images/strace_pic)
 
 ---
 
