@@ -110,9 +110,9 @@ I searched the coredump for the magic number and found this block of hexadecimal
 487a40c5943df638a81813e2de6318a507f9a0ba2dbb8a7ba63666d08d11a65ec914d66ff236839f4dcd711a52862955
 ```
 This data splits into:
-- **4 bytes:** Magic number  
-- **32 bytes:** ChaCha20 key  
-- **12 bytes:** Nonce
+   1- **4 bytes:** Magic number  
+   2- **32 bytes:** ChaCha20 key  
+   3- **12 bytes:** Nonce
 
 The decrypted shellcode is hardcoded in the library. With the key and nonce in hand, the next step was to decrypt the shellcode.
 
