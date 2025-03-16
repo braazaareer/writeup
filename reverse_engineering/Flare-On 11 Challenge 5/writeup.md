@@ -185,11 +185,14 @@ port = 1337
 server = listen(port)
 conn = server.wait_for_connection()
 
+key="a"*32
+nonce="b"*12
+
 # Initially, I sent test data:
 conn.send(key)      # Send key as raw bytes
 conn.send(nonce)    # Send nonce as raw bytes
 conn.send("test")
-conn.send(b"test")  # Send ciphertext as raw bytes
+conn.send("test") 
 
 conn.interactive()
 ```
