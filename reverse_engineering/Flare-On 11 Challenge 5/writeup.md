@@ -220,7 +220,7 @@ Through trial and error, I discovered:
   ```
   Attempts to decrypt it manually in CyberChef failed—likely due to a custom variant of ChaCha20 (or potential input errors).
 
-Since the encryption is symmetric, I let the shellcode handle decryption.
+Since the encryption is likely symmetric, I let the shellcode handle the decryption.
 
 ### Updated Server Script for Final Decryption
 
