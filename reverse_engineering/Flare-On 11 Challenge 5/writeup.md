@@ -185,8 +185,8 @@ port = 1337
 server = listen(port)
 conn = server.wait_for_connection()
 
-key="a"*32
-nonce="b"*12
+key=b"a"*32
+nonce=b"b"*12
 
 # Initially, I sent test data:
 conn.send(key)      # Send key as raw bytes
