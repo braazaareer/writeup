@@ -1,7 +1,3 @@
-Below is an enhanced and detailed write‑up that preserves every detail from your original analysis. You can directly add it to your GitHub repository. Adjust paths, filenames, and screenshots as needed.
-
----
-
 # Flare‑On 11 Challenge 5 – sshd [rev]
 
 This challenge presents a partial Linux filesystem (extracted from a tar archive) from the FLARE-On 11 challenge. In this write‑up, I detail every step—from finding a coredump to decrypting a hardcoded shellcode—while highlighting my analysis and modifications.
