@@ -113,7 +113,7 @@ This data splits into:
    - **32 bytes:** ChaCha20 key  
    - **12 bytes:** Nonce
 
-The decrypted shellcode is hardcoded in the library. With the key and nonce in hand, the next step was to decrypt the shellcode.
+The encrypted shellcode is hardcoded in the library. With the key and nonce in hand, the next step was to decrypt the shellcode.
 
 ---
 
