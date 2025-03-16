@@ -29,7 +29,7 @@ This challenge presents a partial Linux filesystem (extracted from a tar archive
   1. '/usr/sbin/sshd'
   2. from 'sshd: root [priv]'
 
-  This confirms it's a core dump from the sshd process, running as root
+   This confirms it's a core dump from the sshd process, running as root
 
 ---
 
@@ -77,6 +77,7 @@ provides information about all files loaded in the debugging session (including 
   ```
   0x00007f4a18c8f88 - 0x7f4a18c86000
   ```
+  0x7f4a18c86000 --> base address for deleted file
   Opening `liblzma.so.5` in Ghidra and navigating to this offset revealed the function where the crash occurred.
 >screenshot
 
