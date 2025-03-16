@@ -101,8 +101,8 @@ provides information about all files loaded in the debugging session (including 
   - **If true:** It proceeds to call the proper decryption function.
 
 - **Indication of ChaCha20:**  
-  Inside the first function, strings _(expand 32-byte k)_ indicating the expansion of a 32‑byte key are present. Since ChaCha20 uses a 32‑byte key and a 12‑byte nonce, this strongly indicates that ChaCha20 is in use.
-
+ Inside the first function, the appearance of the string literal "expand 32-byte k" is a clear indicator of ChaCha20's involvement. This well-known constant is 
+ used during the key expansion phase in ChaCha20, where a 32‑byte key is transformed into the internal state of the cipher (in combination with a 12‑byte nonce).
 ### Extraction of Key, Nonce, and Encrypted Shellcode
 
 I searched the coredump for the magic number and found this block of hexadecimal data:
