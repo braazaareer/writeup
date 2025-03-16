@@ -80,7 +80,8 @@ provides information about all files loaded in the debugging session (including 
   0x7f4a18c86000 --> base address for deleted file
   
   Opening `liblzma.so.5` in Ghidra and navigating to this offset revealed the function where the crash occurred.
-  ![ghidra_pic](./images/)
+  
+  ![ghidra_pic](./images/ghidra_pic)
 
 - **Ghidra Analysis:**  
   At the computed offset, I observed that the function attempts to call `"RSA_public_decrypt "` (note the trailing space). This is an invalid function name, indicating that the title does not belong to the genuine library routine.
