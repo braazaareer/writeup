@@ -7,7 +7,7 @@ This challenge presents a partial Linux filesystem (extracted from a tar archive
 ## Challenge Background
 
 - **Scenario:**  
-  Our server at the FLARE Intergalactic HQ crashed. The download contains a single tar archive, and after extraction you get a partial Linux filesystem.
+  Our server in the FLARE Intergalactic HQ has crashed! Now criminals are trying to sell me my own data!!! Do your part, random internet hacker, to help FLARE out and tell us what data they stole! We used the best forensic preservation technique of just copying all the files on the system for you.
     
 - **Coredump Location:**  
   The relevant coredump was found at:  
