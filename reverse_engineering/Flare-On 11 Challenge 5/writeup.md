@@ -208,7 +208,7 @@ Through trial and error, I discovered:
   /root/certificate_authority_signing_key.txt
   ```
   This indicates that the server crashed while trying to transfer this file.  
-- The four bytes preceding this string denote the length of the filename, followed by 12 bytes (the nonce) and 32 bytes (the key).
+- I examined the coredump bytes and found the file name string embedded within the bytes. By analyzing the data, I determined that the 4 bytes immediately its length, the 12 bytes before those serve as nonce, and the 32 bytes preceding the nonce constitute the encryption key.
 
 - **Encrypted File Content:**  
   After the filename, I found another suspicious block of data:
