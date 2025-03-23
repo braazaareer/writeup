@@ -103,7 +103,7 @@ provides information about all files loaded in the debugging session (including 
  used during the key expansion phase in ChaCha20, where a 32‑byte key is transformed into the internal state of the cipher (in combination with a 12‑byte nonce).
 ### Extraction of Key, Nonce, and Encrypted Shellcode
 
-I searched the coredump for the magic number and found this block of hexadecimal data:
+I searched in the coredump for the magic number and found this block of hexadecimal data:
 ```
 487a40c5943df638a81813e2de6318a507f9a0ba2dbb8a7ba63666d08d11a65ec914d66ff236839f4dcd711a52862955
 ```
