@@ -227,7 +227,7 @@ Since the encryption is likely symmetric, I let the shellcode handle the decrypt
 
 ### Updated Server Script for Final Decryption
 
-I saved the ciphertext to a file (e.g., named `text`) and updated the Python server script accordingly:
+I saved the ciphertext to a file (named `text`) and updated the Python server script accordingly:
 ```python
 from pwn import *
 
