@@ -3,8 +3,8 @@
 This challenge presents a partial Linux filesystem (extracted from a tar archive) from the FLARE-On 11 challenge. In this write‑up, I detail every step—from finding a coredump to decrypting a hardcoded shellcode—while highlighting my analysis and modifications.
 
 This challenge is adapted from [XZ Utils backdoor](https://securitylabs.datadoghq.com/articles/xz-backdoor-cve-2024-3094/)
-
 sshd is the OpenSSH server process. It listens to incoming connections using the SSH protocol and acts as the server for the protocol. It handles user authentication, encryption, terminal connections, file transfers, and tunneling.
+
 ---
 
 ## Challenge Background
