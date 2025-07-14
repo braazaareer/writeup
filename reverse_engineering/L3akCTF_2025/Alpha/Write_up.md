@@ -65,7 +65,7 @@ Let's break down the handler's actions:
 To see the real logic, we need to let the signal handler do its job and then inspect the memory.
 
 1.  Start GDB: `gdb-gef ./chal`
-2.  Find the address of the illegal instruction that triggers the handler.
+2.  Find the address of the illegal instruction that triggers the handler (FUN_00101310 it execute a printf/fgets then bad instruacion to trigger handler).
 3.  Set a breakpoint, A good spot is right after the decryption loop finishes `*0x555555555275`.
 4.  Run the program and provide some input.
 5.  When the breakpoint hits, the code at `FUN_00101310` is now change. We can examine it with `x/50i <address>`.
