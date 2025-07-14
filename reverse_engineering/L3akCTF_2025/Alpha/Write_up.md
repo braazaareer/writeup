@@ -152,14 +152,6 @@ Running this script gives us the solution.
 
 ## Conclusion
 
-The Alpha challenge was a masterclass in layered obfuscation. By systematically peeling back each layer, we were able to solve it:
-
-1.  **Dynamic Analysis (`ltrace`)** revealed the use of a `SIGILL` handler.
-2.  **Static Analysis (Ghidra)** identified the handler as a one-time decryption stub.
-3.  **Dynamic Analysis (GDB)** allowed us to inspect the decrypted code in memory.
-4.  **Reverse Engineering** of the decrypted code revealed arithmetically obfuscated functions and a "master flag" mechanism.
-5.  **Constraint Solving (Z3)** provided an efficient way to solve the system of equations derived from the program's logic.
-
 This challenge highlights how attackers and malware authors can hide functionality in plain sight, forcing an analyst to look beyond the static code and understand the program's full runtime behavior.
 
 **Final Flag:** `L3AK{R3m0V&_Qu@n~iF!3rs}`
