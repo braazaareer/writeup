@@ -29,7 +29,9 @@ Since the program's behavior is opaque, let's trace its library calls.
 ```bash
 $  ltrace -i -S ./chal
 ```
+
 ![ltrace](images/ltrace)
+
 
 This output is the key to the entire challenge.
 
