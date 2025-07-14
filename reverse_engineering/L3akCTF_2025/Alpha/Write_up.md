@@ -117,6 +117,7 @@ this code 👇
 [decrypt.py](/script/decrypt.py)
 
 After running the decryption, we obtain the plaintext code for Stage 2.
+
 ![stage2](images/stage2)
 
 The `master_flag` at `[rbp-0x11]` is initialized to 1. After each stage, it is bitwise ANDed with the result of that stage. If any stage fails (result is 0), the master flag becomes 0 and can never be 1 again. The final check of the program is simply `if (master_flag == 1)`.
