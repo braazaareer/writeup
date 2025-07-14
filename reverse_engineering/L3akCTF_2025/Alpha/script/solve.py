@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-#
-# This script uses the z3-solver to find the correct input for the provided
-# assembly code. It translates the assembly instructions from each of the 38
-# stages into symbolic constraints that z3 can solve.
-#
-# Installation:
-# pip install z3-solver
-#
 # How it works:
 # 1. It defines all the input bytes (from [rbp-0x49] to [rbp-0x60]) as 8-bit
 #    symbolic variables (BitVecs).
@@ -17,8 +9,6 @@
 # 4. For each stage, it adds a constraint to the solver, requiring the result of
 #    the `cmp` instruction to be true. The script ignores the flag-setting logic
 #    as adding all constraints directly achieves the same goal.
-# 5. Finally, it asks z3 to find a model (a set of concrete values for the
-#    input bytes) that satisfies all the constraints and prints the result.
 
 from z3 import *
 s = Solver()
