@@ -114,7 +114,8 @@ The core concept is that the decryption of Stage 2 is chained from the result of
 
 I write decrypt code with capstone to disassemble code 
 this code 👇
-[decrypt.py](/script/decrypt.py)
+
+[decrypt.py](script/decrypt.py)
 
 After running the decryption, we obtain the plaintext code for Stage 2.
 
