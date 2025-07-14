@@ -106,13 +106,20 @@ With this knowledge, we can translate the assembly for the first stage:
    0x55555555534a:	(bad)  --> call signal handler again 
 ```
 
-The equation for Stage 1 is: `((input[12] | input[13]) ^ input[0]) * input[9] == 4902`.
+The equation is: `((input[12] | input[13]) ^ input[0]) * input[9] == 4902`.
 
-## 6. Full Decryption and The "Master Flag"
+and the most important is 
+`0x55555555534a:	(bad)  --> call signal handler again ` 
+
+## 6. Full Decryption
 The core concept is that the decryption of Stage 2 is chained from the result of Stage 1, likely using a mode like Cipher Block Chaining (CBC).
+
 `encrypted_code_for_second = decrypted_code_for_first`
 
-I write decrypt code with capstone to disassemble code 
+ We can write a Python script using Capstone to automate the full decryption process and extract all the constraints.
+ you can find key in DAT_00102020 (in FUN_001011e9) with length 2432 byte
+
+
 this code 👇
 
 [decrypt.py](script/decrypt.py)
@@ -121,9 +128,20 @@ After running the decryption, we obtain the plaintext code for Stage 2.
 
 ![stage2](images/stage2)
 
-The `master_flag` at `[rbp-0x11]` is initialized to 1. After each stage, it is bitwise ANDed with the result of that stage. If any stage fails (result is 0), the master flag becomes 0 and can never be 1 again. The final check of the program is simply `if (master_flag == 1)`.
 
-To solve the challenge, we need to satisfy the equations for *all* stages. We can write a Python script using Capstone to automate the full decryption process and extract all the constraints.
+Analysis of the newly decrypted code reveals a critical control flow mechanism that ensures all stages are solved sequentially and correctly.
+
+it contain another constraint but,
+
+this is the most important new piece of logic:
+
+-   At the conclusion of Stage 1, the result of `cmp eax, 0x1326` was stored in the `edx` register (via `sete al` followed by `movzx edx, al`). This means `edx` is set to `1` if Stage 1 was successfully passed, and `0` if it failed.
+-   A "master flag" variable, located at `[rbp - 0x11]`, is initialized to `1` at the beginning of the program's execution.
+-   `and eax, edx`: This instruction performs a bitwise AND operation. It takes the current value of the master flag (loaded into `eax`) and ANDs it with the result from the previous stage (`edx`).
+-   `mov byte ptr [rbp - 0x11], al`: The outcome of the AND operation is then saved back into the master flag's memory location.
+
+**What this means:** The master flag at `[rbp - 0x11]` will only remain `1` if **ALL** preceding stages have been successfully completed. If any single stage fails, its corresponding check will result in a `0`, causing the master flag to become `0`. This flag will then remain `0` for all subsequent checks, effectively preventing progress until every stage is solved in order.
+To solve the challenge, we need to satisfy the equations for *all* stages.
 
 ## 7. Solving with Z3
 
@@ -131,55 +149,11 @@ We now have a system of complex mathematical equations. This is a perfect use ca
 
 The following Python script models the entire system and asks Z3 to find a valid input (the flag).
 
-```python
-# z3_solver.py
-from z3 import *
-
-# The flag is expected to be 20 characters long
-flag = [BitVec(f'flag_{i}', 8) for i in range(20)]
-
-solver = Solver()
-
-# Add constraints for printable characters
-for i in range(20):
-    solver.add(And(flag[i] >= 32, flag[i] <= 126))
-
-# --- Stage 1 ---
-solver.add(((flag[12] | flag[13]) ^ flag[0]) * flag[9] == 4902)
-
-# --- Stage 2 ---
-solver.add((flag[1] + flag[2]) * flag[3] == 18048)
-
-# --- Stage 3 ---
-solver.add(((flag[18] | flag[17]) - flag[16]) * flag[15] == 8580)
-
-# --- Stage 4 ---
-solver.add((flag[4] & flag[5]) * flag[6] == 4200)
-
-# --- Stage 5 ---
-solver.add(((flag[14] ^ flag[11]) + flag[10]) * flag[7] == 19179)
-
-# --- Stage 6 ---
-solver.add((flag[8] * flag[19]) - flag[12] == 4340)
-
-
-# Check for a solution and print the flag
-if solver.check() == sat:
-    m = solver.model()
-    result = bytearray(20)
-    for i in range(20):
-        result[i] = m[flag[i]].as_long()
-    print(f"[*] Flag found: {result.decode()}")
-else:
-    print("[!] No solution found")
-```
+[decrypt.py](script/solve.py)
 
 Running this script gives us the solution.
 
-```bash
-$ python3 z3_solver.py
-[*] Flag found: 4lph4_is_s0_c0nfus3d
-```
+![flag](images/flag)
 
 ## Conclusion
 
