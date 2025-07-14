@@ -1,4 +1,4 @@
-# Alpha CTF Write-up: Deobfuscating with Signals and Self-Modifying Code
+# Alpha Write-up: Deobfuscating with Signals and Self-Modifying Code
 
 This write-up details the solution for the "Alpha" reverse engineering challenge. This was a fascinating binary that employed several layers of clever obfuscation, including anti-debugging via signal handling, runtime code decryption, and arithmetically obfuscated functions. Solving it required a combination of static and dynamic analysis, code scripting, and constraint solving.
 
