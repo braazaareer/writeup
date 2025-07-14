@@ -162,5 +162,5 @@ The Alpha challenge was a masterclass in layered obfuscation. By systematically 
 
 This challenge highlights how attackers and malware authors can hide functionality in plain sight, forcing an analyst to look beyond the static code and understand the program's full runtime behavior.
 
-**Final Flag:** `4lph4_is_s0_c0nfus3d`
+**Final Flag:** `L3AK{R3m0V&_Qu@n~iF!3rs}`
 
