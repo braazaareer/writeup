@@ -117,7 +117,7 @@ The core concept is that the decryption of Stage 2 is chained from the result of
 `encrypted_code_for_second = decrypted_code_for_first`
 
  We can write a Python script using Capstone to automate the full decryption process and extract all the constraints.
- you can find key in DAT_00102020 (in FUN_001011e9) with length 2432 byte
+ you can find key in `DAT_00102020` (in FUN_001011e9) with length 2432 byte
 
 
 this code 👇
