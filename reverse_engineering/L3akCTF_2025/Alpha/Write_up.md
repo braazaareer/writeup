@@ -72,13 +72,16 @@ To see the real logic, we need to let the signal handler do its job and then ins
 
 ![gdb](images/gdb)
 
-This reveals the first stage of the decrypted code, which contains a series of comparisons and calls to other functions.
-
-The assembly shows a pattern: load a character from our input, call a function, load another character, call another function, and so on, finally comparing a result to a constant value (`0x1326` or `4902`).
+This reveals the first stage of the decrypted code, which contains a series of comparisons and calls to other functions:
+1.  `BYTE PTR [rbp-0x53]`, `BYTE PTR [rbp-0x54]` and `BYTE PTR [rbp-0x60]`: These lines load `input[13]` , `input[12]` and `input[0]` respectively.
+2.  `call 0x...564a`: This calls `FUN_0010164a`.
+3.  `call 0x...56c8`: This calls `FUN_001016c8`.
+4.  `call 0x...553b`: This calls `FUN_0010153b`.
 
 ## 5. Deobfuscating the Arithmetic
 
 The challenge's next layer of defense is arithmetically obfuscated functions. By analyzing the functions called from the decrypted code (e.g., `FUN_0010164a`, `FUN_001016c8`, `FUN_0010153b`), we can determine their true purpose.
+> I searched GEDRA to find similar jobs
 
 * `FUN_0010164a`: **Obfuscated OR**. It iterates through the bits of its inputs, effectively calculating `(a + b) - (a * b)`, which is a bitwise way to compute `a | b`.
 * `FUN_001016c8`: **Obfuscated XOR**. It reconstructs the result bit by bit. The logic simplifies to `a ^ b`.
@@ -90,30 +93,25 @@ The challenge's next layer of defense is arithmetically obfuscated functions. By
 With this knowledge, we can translate the assembly for the first stage:
 
 ```assembly
-; ( (input[13] | input[12]) ^ input[0] ) * input[9] == 4902
-movzx  eax, BYTE PTR [rbp-0x53]  ; eax = input[13]
-movzx  ecx, BYTE PTR [rbp-0x54]  ; ecx = input[12]
-mov    edx, eax
-mov    eax, ecx
-call   FUN_0010164a              ; eax = input[12] | input[13]
-movzx  ecx, BYTE PTR [rbp-0x60]  ; ecx = input[0]
-mov    edx, eax
-mov    eax, ecx
-call   FUN_001016c8              ; eax = input[0] ^ (input[12] | input[13])
-movzx  ecx, BYTE PTR [rbp-0x57]  ; ecx = input[9]
-mov    edx, eax
-mov    eax, ecx
-call   FUN_0010153b              ; eax = input[9] * ( ... )
-cmp    eax, 0x1326               ; compare with 4902
+   0x555555555313:	movzx  eax,BYTE PTR [rbp-0x60]  --> input[0]
+   0x55555555531b:	movzx  eax,BYTE PTR [rbp-0x54]  --> input[12]
+   0x555555555322:	movzx  eax,BYTE PTR [rbp-0x53]  --> input[13]
+
+   0x55555555532d:	call   0x55555555564a -->  input[12] | input[13]
+
+   0x555555555337:	call   0x5555555556c8 --> result ^ input [0]
+
+   0x555555555340:	call   0x55555555553b -->  result * input[9] #rbx = input[9] from trace in gdb 
+   0x555555555345:	cmp    eax,0x1326
+   0x55555555534a:	(bad)  --> call signal handler again 
 ```
 
 The equation for Stage 1 is: `((input[12] | input[13]) ^ input[0]) * input[9] == 4902`.
 
 ## 6. Full Decryption and The "Master Flag"
 
-The check doesn't stop after one stage. The signal handler is only called once, but the decrypted code contains the logic for all subsequent stages. The key insight is that the decryption is **chained**. The decrypted code of one stage is used to decrypt the next block of code.
+The check doesn't stop after one stage. The signal handler is only called once, The key insight is that the decryption is **chained**. The decrypted code of one stage is used as cipher text next block of code.
 
-Furthermore, the program maintains a "master flag" to ensure all stages are solved correctly.
 
 ```assembly
 ; At the end of a stage
