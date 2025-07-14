@@ -144,7 +144,7 @@ We now have a system of complex mathematical equations. This is a perfect use ca
 
 The following Python script models the entire system and asks Z3 to find a valid input (the flag).
 
-[decrypt.py](script/solve.py)
+[solve.py](script/solve.py)
 
 Running this script gives us the solution.
 
