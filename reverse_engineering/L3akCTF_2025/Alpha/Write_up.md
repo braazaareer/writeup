@@ -1,5 +1,3 @@
-**Alpha** CTF Challenge Writeup
-
 **Challenge Title:** Alpha
 **Category:** Reverse Engineering (Obfuscation via Signal Handling)
 
