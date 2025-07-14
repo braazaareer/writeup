@@ -131,14 +131,9 @@ After running the decryption, we obtain the plaintext code for Stage 2.
 
 Analysis of the newly decrypted code reveals a critical control flow mechanism that ensures all stages are solved sequentially and correctly.
 
-it contain another constraint but,
+-  A "Master" Flag Check: The first five instructions are new and are responsible for tracking the overall success across all stages.
 
-this is the most important new piece of logic:
-
--   At the conclusion of Stage 1, the result of `cmp eax, 0x1326` was stored in the `edx` register (via `sete al` followed by `movzx edx, al`). This means `edx` is set to `1` if Stage 1 was successfully passed, and `0` if it failed.
--   A "master flag" variable, located at `[rbp - 0x11]`, is initialized to `1` at the beginning of the program's execution.
--   `and eax, edx`: This instruction performs a bitwise AND operation. It takes the current value of the master flag (loaded into `eax`) and ANDs it with the result from the previous stage (`edx`).
--   `mov byte ptr [rbp - 0x11], al`: The outcome of the AND operation is then saved back into the master flag's memory location.
+-  Another Calculation: The rest of the code is another calculation, very similar in structure to Stage #1, but using different characters from your input and a new function.
 
 **What this means:** The master flag at `[rbp - 0x11]` will only remain `1` if **ALL** preceding stages have been successfully completed. If any single stage fails, its corresponding check will result in a `0`, causing the master flag to become `0`. This flag will then remain `0` for all subsequent checks, effectively preventing progress until every stage is solved in order.
 To solve the challenge, we need to satisfy the equations for *all* stages.
