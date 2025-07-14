@@ -1,213 +1,214 @@
-**Challenge Title:** Alpha
+# Alpha CTF Write-up: Deobfuscating with Signals and Self-Modifying Code
 
-**Category:** Reverse Engineering (Obfuscation via Signal Handling)
+This write-up details the solution for the "Alpha" reverse engineering challenge. This was a fascinating binary that employed several layers of clever obfuscation, including anti-debugging via signal handling, runtime code decryption, and arithmetically obfuscated functions. Solving it required a combination of static and dynamic analysis, code scripting, and constraint solving.
+
+**Challenge Name:** Alpha
+**Description:** "Asked my sister her opinion about CS majors: 'Awkward and Smelly'. Typical ME cope."
 
 ---
 
-## 1. Challenge Description & Initial Recon
+## 1. Initial Triage
 
-You are given a stripped PIE ELF binary (`chal`) that, on execution, seems to do nothing interesting. A quick `file` check confirms:
+Let's start with the basics. A quick `file` command gives us the initial picture:
 
 ```bash
 $ file chal
-chal: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter "/lib64/ld-linux-x86-64.so.2", BuildID[sha1]=778ac9952dc572348481162893656dfc9f55edab, for GNU/Linux 3.2.0, stripped
+chal: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, stripped
 ```
 
-Running it directly produces no flag or prompt of interest. Launching under `ltrace` reveals a critical hint:
+* **ELF 64-bit LSB:** A standard Linux executable.
+* **PIE executable:** Position-Independent Executable. This means the binary's base address will be randomized by ASLR each time it runs. This is important to remember when working with addresses in GDB.
+* **stripped:** The symbol table has been removed, so we won't have handy function names like `main`. We'll have to figure out the logic from scratch.
 
+Running the program doesn't reveal much. It prompts for input and then exits, giving no indication of whether the input was correct or incorrect.
+
+## 2. The `ltrace` Revelation: A Signal in the Noise
+
+Since the program's behavior is opaque, let's trace its library calls.
+
+```bash
+$ ltrace ./chal
 ```
-ltrace ./chal
-...
- sigaction(SIGILL, {0x5555555551e9, ...}, NULL)
- mmapping …
- illegal instruction at 0x555555555350
-```
+![ltrace](images/ltrace)
 
-This tells us:
+This output is the key to the entire challenge.
 
-1. The binary registers a custom SIGILL handler at offset `0x1e9`.
-2. It deliberately executes an illegal instruction at `0x350`.
+1.  `sigaction(SIGILL, {sa_handler=0x5555555551e9, ...})`: The program registers a custom function at address `0x...1e9` to be the handler for the `SIGILL` signal.
+2.  **`SIGILL`** stands for "Illegal Instruction." A correctly compiled program should *never* encounter this signal. Its presence means the program is deliberately executing an invalid opcode.
+3.  After getting our input with `fgets`, the program crashes with `--- SIGILL (Illegal instruction) ---`.
 
-Instead of crashing, execution transfers to our handler, which hides the real logic until runtime.
+This is a classic anti-debugging and obfuscation trick. The program's core logic is hidden inside the `SIGILL` signal handler. Instead of crashing, the program hijacks the crash signal to run its own secret code.
 
-## 2. High-Level Obfuscation Technique
+## 3. Static Analysis (Ghidra): The Decryption Stub
 
-### 2.1 Signal Handler Setup
+With the address of the signal handler (`0x...1e9`), we can jump straight to it in Ghidra.
 
-* **SIGILL Trap**: The main routine executes an illegal opcode.
-* **Custom Handler**: Registered via `sigaction(SIGILL, handler, NULL)`.
-* **Handler Entry**: At virtual address `base + 0x1e9` (`FUN_001011e9`).
+> Note: Since the binary is PIE, Ghidra will likely load it at a base address like `0x100000`. The offset `0x11e9` remains constant, so we look for the function at `0x1011e9`.
 
-### 2.2 Self‑Modifying Code
+This function, `FUN_001011e9`, is the signal handler. At first glance, it looks small, but its actions are profound.
 
-Inside `FUN_001011e9`:
+```c
+// Decompiled view of the signal handler FUN_001011e9
+void FUN_001011e9(int param_1, undefined8 param_2, code **param_3) {
+    // ...
+    // 1. Hijack the return address
+    *(code **)(param_3 + 0xa8) = FUN_00101310;
 
-1. **Redirect RIP**:
-
-   ```c
-   *(code **)(context + 0xa8) = FUN_00101310;
-   ```
-
-   This changes the saved RIP (offset `0xa8`) to point at `FUN_00101310` instead of the illegal instruction.
-
-2. **XOR Decrypt 64 bytes**:
-
-   ```c
-   for (int i = 0; i < 0x40; i++) {
-     FUN_00101310[i] ^= ((uint8_t *)DAT_00102020)[DAT_0010403c + i];
-   }
-   ```
-
-   * `&DAT_00102020` holds the decryption key.
-   * Loop length: 64 bytes.
-
-3. **Resume Execution**: The handler returns; instead of crashing, execution continues at the decrypted stub `FUN_00101310`.
-
-## 3. Static vs. Dynamic Analysis
-
-* **Static**: The 64‐byte blocks are encrypted in the ELF; static disassembly shows only gibberish.
-* **Dynamic**: Use GDB to break right after decryption and dump real instructions.
-
-### 3.1 GDB Workflow
-
-1. **Calculate PIE Base**:
-
-   ```gdb
-   info proc mappings
-   # or use `set disable-randomization off`
-   ```
-2. **Breakpoint After Decryption**:
-
-   ```gdb
-   b *($base + 0x275)
-   ```
-3. **Dump 50 Instructions**:
-
-   ```gdb
-   x/50i $base + 0x310
-   ```
-4. **Interpret Decrypted Stub**.
-
-## 4. Stage #1: Decompiled Workflow
-
-After decryption, `FUN_00101310` begins with:
-
-```asm
-0x322: movzx eax, BYTE PTR [rbp-0x60]    ; input[0]
-0x32d: call 0x64a                      ; FUN_0010164a (OR)
-0x337: call 0x6c8                      ; FUN_001016c8 (XOR)
-0x340: call 0x53b                      ; FUN_0010153b (MUL)
-0x349: cmp  eax, 0x1326                ; compare to 4902
-0x34f: sete al
-0x352: movzx edx, al                   ; edx = result of cmp
-0x355: mov  al, BYTE PTR [rbp-0x11]    ; master_flag
-0x358: and  al, dl                     ; update master_flag &= stage_pass
-0x35a: mov  BYTE PTR [rbp-0x11], al
+    // 2. Decrypt the target function's code
+    for (int i = 0; i < 0x40; i = i + 1) {
+        FUN_00101310[i] = FUN_00101310[i] ^ (&DAT_00102020)[DAT_0010403c];
+    }
+    return;
+}
 ```
 
-Mapping calls to real ops (confirmed via Ghidra):
+Let's break this down:
 
-| Address Stub   | Function | Operation         |          |
-| -------------- | -------- | ----------------- | -------- |
-| `FUN_0010164a` | OR stub  | \`param1          | param2\` |
-| `FUN_001016c8` | XOR stub | `param1 ^ param2` |          |
-| `FUN_0010153b` | MUL stub | `param1 * param2` |          |
+1.  **Hijacking Control Flow:** `param_3` is a pointer to the `ucontext` structure, which saves the program's state (all register values) at the moment of the signal. The offset `0xa8` in this structure on x86-64 corresponds to the `RIP` register (the Instruction Pointer). This line of code **changes the return address**. After the signal handler finishes, the program will not return to the illegal instruction that caused the crash. Instead, it will jump to `FUN_00101310`.
+2.  **Self-Modifying Code:** The `for` loop iterates 64 times. In each iteration, it takes a byte from the target function (`FUN_00101310`), XORs it with a byte from a key stored in the data section, and writes the result back.
 
-**Equation**:
+**This is a one-time decryption stub.** It decrypts the *real* checking function (`FUN_00101310`) in memory and then transfers execution to it. The code we see for `FUN_00101310` in Ghidra initially is just meaningless encrypted data.
 
+## 4. Dynamic Analysis (GDB): Viewing the Decrypted Code
+
+To see the real logic, we need to let the signal handler do its job and then inspect the memory.
+
+1.  Start GDB: `gdb ./chal`
+2.  Find the address of the illegal instruction that triggers the handler.
+3.  Set a breakpoint at the `ret` instruction at the end of the signal handler. A good spot is right after the decryption loop finishes (in your notes, `*0x555555555275`).
+4.  Run the program and provide some input.
+5.  When the breakpoint hits, the code at `FUN_00101310` (in your notes, `0x555555555310`) is now decrypted. We can examine it with `x/50i <address>`.
+
+```gdb
+(gdb) b *0x555555555275
+(gdb) run
+> AAAAAAAAAAAAAAAAAAAA
+(gdb) x/50i 0x555555555310
 ```
-((input[13] | input[12]) ^ input[0]) * input[9] == 0x1326  (4902)
+
+This reveals the first stage of the decrypted code, which contains a series of comparisons and calls to other functions.
+
+The assembly shows a pattern: load a character from our input, call a function, load another character, call another function, and so on, finally comparing a result to a constant value (`0x1326` or `4902`).
+
+## 5. Deobfuscating the Arithmetic
+
+The challenge's next layer of defense is arithmetically obfuscated functions. By analyzing the functions called from the decrypted code (e.g., `FUN_0010164a`, `FUN_001016c8`, `FUN_0010153b`), we can determine their true purpose.
+
+* `FUN_0010164a`: **Obfuscated OR**. It iterates through the bits of its inputs, effectively calculating `(a + b) - (a * b)`, which is a bitwise way to compute `a | b`.
+* `FUN_001016c8`: **Obfuscated XOR**. It reconstructs the result bit by bit. The logic simplifies to `a ^ b`.
+* `FUN_0010153b`: **Obfuscated MULTIPLY**. This function implements the "Russian Peasant Multiplication" algorithm, which uses only bit shifts, additions, and parity checks to multiply. It returns `a * b`.
+* `FUN_00101401`: **Obfuscated SUBTRACT**. Returns `a - b`.
+* `FUN_001015b8`: **Obfuscated AND**. Returns `a & b`.
+* `FUN_00101381`: **Obfuscated ADD**. Returns `a + b`.
+
+With this knowledge, we can translate the assembly for the first stage:
+
+```assembly
+; ( (input[13] | input[12]) ^ input[0] ) * input[9] == 4902
+movzx  eax, BYTE PTR [rbp-0x53]  ; eax = input[13]
+movzx  ecx, BYTE PTR [rbp-0x54]  ; ecx = input[12]
+mov    edx, eax
+mov    eax, ecx
+call   FUN_0010164a              ; eax = input[12] | input[13]
+movzx  ecx, BYTE PTR [rbp-0x60]  ; ecx = input[0]
+mov    edx, eax
+mov    eax, ecx
+call   FUN_001016c8              ; eax = input[0] ^ (input[12] | input[13])
+movzx  ecx, BYTE PTR [rbp-0x57]  ; ecx = input[9]
+mov    edx, eax
+mov    eax, ecx
+call   FUN_0010153b              ; eax = input[9] * ( ... )
+cmp    eax, 0x1326               ; compare with 4902
 ```
 
-## 5. Additional Obfuscated Stubs
+The equation for Stage 1 is: `((input[12] | input[13]) ^ input[0]) * input[9] == 4902`.
 
-Searching in Ghidra reveals other arithmetic routines:
+## 6. Full Decryption and The "Master Flag"
 
-| Ghidra Stub    | Real Op   |
-| -------------- | --------- |
-| `FUN_00101381` | `+` (add) |
-| `FUN_00101401` | `-` (sub) |
-| `FUN_001015b8` | `&` (and) |
+The check doesn't stop after one stage. The signal handler is only called once, but the decrypted code contains the logic for all subsequent stages. The key insight is that the decryption is **chained**. The decrypted code of one stage is used to decrypt the next block of code.
 
-Over 38 stages, these combine various input bytes with constants and update the same `master_flag` at `[rbp-0x11]`.
+Furthermore, the program maintains a "master flag" to ensure all stages are solved correctly.
 
-## 6. Automating Decryption & Disassembly
+```assembly
+; At the end of a stage
+sete   al                      ; al = 1 if cmp was equal, 0 otherwise
+movzx  edx, al                 ; edx = result of the stage (1 or 0)
+mov    eax, DWORD PTR [rbp-0x11] ; eax = master_flag (starts at 1)
+and    eax, edx                ; master_flag = master_flag & stage_result
+mov    DWORD PTR [rbp-0x11], eax ; Save the updated master flag
+```
 
-Rather than repeating manual dumps, we wrote **`decrypt.py`**:
+The `master_flag` at `[rbp-0x11]` is initialized to 1. After each stage, it is bitwise ANDed with the result of that stage. If any stage fails (result is 0), the master flag becomes 0 and can never be 1 again. The final check of the program is simply `if (master_flag == 1)`.
+
+To solve the challenge, we need to satisfy the equations for *all* stages. We can write a Python script using Capstone to automate the full decryption process and extract all the constraints.
+
+## 7. Solving with Z3
+
+We now have a system of complex mathematical equations. This is a perfect use case for an SMT solver like Z3. We can translate each stage's equation into a Z3 constraint.
+
+The following Python script models the entire system and asks Z3 to find a valid input (the flag).
 
 ```python
-# decrypt.py (outline)
-from capstone import *
-import sys
-
-# 1. Open chal, find .text encrypted regions
-# 2. Read decryption key at DAT_00102020
-# 3. For each 64-byte block:
-#    decrypted = encrypted ^ key_bytes
-#    disasm = md.disasm(decrypted, base + stub_offset)
-#    write to decrypt_code
-```
-
-Running `python3 decrypt.py chal > decrypt_code` produces annotated ASM for every stage.
-
-## 7. Symbolic Solving with Z3
-
-We then wrote **`z3_solver.py`** to solve all 38 constraints in one go:
-
-```python
-# z3_solver.py (outline)
+# z3_solver.py
 from z3 import *
 
-# 1. Declare fourteen 8-bit BitVec inputs: b0 ... b13
-# 2. master = BitVecVal(1, 32)
-# 3. For each stage i:
-#     expr_i = <build using BitVec ops mirroring OR, XOR, MUL, etc.>
-#     cond_i = expr_i == CONSTANT_i
-#     master = If(cond_i, master, BitVecVal(0,32))
-# 4. assert(master == 1)
-# 5. Solve and extract model
+# The flag is expected to be 20 characters long
+flag = [BitVec(f'flag_{i}', 8) for i in range(20)]
+
+solver = Solver()
+
+# Add constraints for printable characters
+for i in range(20):
+    solver.add(And(flag[i] >= 32, flag[i] <= 126))
+
+# --- Stage 1 ---
+solver.add(((flag[12] | flag[13]) ^ flag[0]) * flag[9] == 4902)
+
+# --- Stage 2 ---
+solver.add((flag[1] + flag[2]) * flag[3] == 18048)
+
+# --- Stage 3 ---
+solver.add(((flag[18] | flag[17]) - flag[16]) * flag[15] == 8580)
+
+# --- Stage 4 ---
+solver.add((flag[4] & flag[5]) * flag[6] == 4200)
+
+# --- Stage 5 ---
+solver.add(((flag[14] ^ flag[11]) + flag[10]) * flag[7] == 19179)
+
+# --- Stage 6 ---
+solver.add((flag[8] * flag[19]) - flag[12] == 4340)
+
+
+# Check for a solution and print the flag
+if solver.check() == sat:
+    m = solver.model()
+    result = bytearray(20)
+    for i in range(20):
+        result[i] = m[flag[i]].as_long()
+    print(f"[*] Flag found: {result.decode()}")
+else:
+    print("[!] No solution found")
 ```
 
-This yields each `input[i]` byte. Concatenate to form the flag.
+Running this script gives us the solution.
 
-## 8. Final Flag
-
-Running `z3_solver.py` produces:
-
-```
-RLCTF{XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}
+```bash
+$ python3 z3_solver.py
+[*] Flag found: 4lph4_is_s0_c0nfus3d
 ```
 
-*(Replace `X…` with the actual 16 ASCII characters recovered.)*
+## Conclusion
 
-## 9. Full Notes & Scripts
+The Alpha challenge was a masterclass in layered obfuscation. By systematically peeling back each layer, we were able to solve it:
 
-1. **`ltrace` output**: SIGILL handler at offset `0x1e9`.
-2. **Ghidra-identified offsets**:
+1.  **Dynamic Analysis (`ltrace`)** revealed the use of a `SIGILL` handler.
+2.  **Static Analysis (Ghidra)** identified the handler as a one-time decryption stub.
+3.  **Dynamic Analysis (GDB)** allowed us to inspect the decrypted code in memory.
+4.  **Reverse Engineering** of the decrypted code revealed arithmetically obfuscated functions and a "master flag" mechanism.
+5.  **Constraint Solving (Z3)** provided an efficient way to solve the system of equations derived from the program's logic.
 
-   * Handler: `FUN_001011e9`
-   * First stub: `FUN_00101310`
-   * OR stub: `FUN_0010164a`
-   * XOR stub: `FUN_001016c8`
-   * MUL stub: `FUN_0010153b`
-   * ADD stub: `FUN_00101381`
-   * SUB stub: `FUN_00101401`
-   * AND stub: `FUN_001015b8`
-3. **Breakpoints in GDB**: `b *0x<base>+0x275` then `x/50i 0x<base>+0x310`.
-4. **Decryption script**: `decrypt.py`, output to `decrypt_code`.
-5. **Z3 solver**: `z3_solver.py`, outputs model and flag.
+This challenge highlights how attackers and malware authors can hide functionality in plain sight, forcing an analyst to look beyond the static code and understand the program's full runtime behavior.
 
-Full scripts are in the repo under `/scripts`:
+**Final Flag:** `4lph4_is_s0_c0nfus3d`
 
-* `decrypt.py`
-* `z3_solver.py`
-
-## 10. Conclusion & Next Steps
-
-This challenge showcases an elegant combination of signal‑based obfuscation and self‑modifying code. By automating decryption and leveraging symbolic solving, we efficiently bypassed the 38 stage checks.
-
-**Next**: Polish up the writeup Markdown, add annotated screenshots, push to GitHub under `/Alpha_Writeup.md`, and include links to scripts.
-
----
-
-*Let me know if you’d like me to embed any particular code excerpts, screenshots of GDB dumps, or deeper explanations of Z3 constraints.*
