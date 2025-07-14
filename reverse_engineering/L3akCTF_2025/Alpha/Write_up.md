@@ -21,7 +21,9 @@ chal: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linke
 * **stripped:** The symbol table has been removed, so we won't have handy function names like `main`. We'll have to figure out the logic from scratch.
 
 Running the program doesn't reveal much. It prompts for input and then exits, giving no indication of whether the input was correct or incorrect.
+
 ![run](images/run)
+
 ## 2. The `ltrace` Revelation: A Signal in the Noise
 
 Since the program's behavior is opaque, let's trace its library calls.
@@ -29,9 +31,7 @@ Since the program's behavior is opaque, let's trace its library calls.
 ```bash
 $  ltrace -i -S ./chal
 ```
-
 ![ltrace](images/ltrace)
-
 
 This output is the key to the entire challenge.
 
