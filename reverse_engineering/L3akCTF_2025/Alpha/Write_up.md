@@ -101,7 +101,7 @@ With this knowledge, we can translate the assembly for the first stage:
 
    0x555555555337:	call   0x5555555556c8 --> result ^ input [0]
 
-   0x555555555340:	call   0x55555555553b -->  result * input[9] #rbx = input[9] from trace in gdb 
+   0x555555555340:	call   0x55555555553b -->  result * input[9] //rbx = input[9] from trace in gdb 
    0x555555555345:	cmp    eax,0x1326
    0x55555555534a:	(bad)  --> call signal handler again 
 ```
