@@ -81,7 +81,7 @@ This reveals the first stage of the decrypted code, which contains a series of c
 ## 5. Deobfuscating the Arithmetic
 
 The challenge's next layer of defense is arithmetically obfuscated functions. By analyzing the functions called from the decrypted code (e.g., `FUN_0010164a`, `FUN_001016c8`, `FUN_0010153b`), we can determine their true purpose.
-> I searched GEDRA to find similar jobs
+> I search in ghidra to find similar functions
 
 * `FUN_0010164a`: **Obfuscated OR**. It iterates through the bits of its inputs, effectively calculating `(a + b) - (a * b)`, which is a bitwise way to compute `a | b`.
 * `FUN_001016c8`: **Obfuscated XOR**. It reconstructs the result bit by bit. The logic simplifies to `a ^ b`.
@@ -109,18 +109,15 @@ With this knowledge, we can translate the assembly for the first stage:
 The equation for Stage 1 is: `((input[12] | input[13]) ^ input[0]) * input[9] == 4902`.
 
 ## 6. Full Decryption and The "Master Flag"
+The core concept is that the decryption of Stage 2 is chained from the result of Stage 1, likely using a mode like Cipher Block Chaining (CBC).
+`encrypted_code_for_second = decrypted_code_for_first`
 
-The check doesn't stop after one stage. The signal handler is only called once, The key insight is that the decryption is **chained**. The decrypted code of one stage is used as cipher text next block of code.
+I write decrypt code with capstone to disassemble code 
+this code 👇
+[decrypt.py](/script/decrypt.py)
 
-
-```assembly
-; At the end of a stage
-sete   al                      ; al = 1 if cmp was equal, 0 otherwise
-movzx  edx, al                 ; edx = result of the stage (1 or 0)
-mov    eax, DWORD PTR [rbp-0x11] ; eax = master_flag (starts at 1)
-and    eax, edx                ; master_flag = master_flag & stage_result
-mov    DWORD PTR [rbp-0x11], eax ; Save the updated master flag
-```
+After running the decryption, we obtain the plaintext code for Stage 2.
+![stage2](images/stage2)
 
 The `master_flag` at `[rbp-0x11]` is initialized to 1. After each stage, it is bitwise ANDed with the result of that stage. If any stage fails (result is 0), the master flag becomes 0 and can never be 1 again. The final check of the program is simply `if (master_flag == 1)`.
 
