@@ -21,13 +21,13 @@ chal: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linke
 * **stripped:** The symbol table has been removed, so we won't have handy function names like `main`. We'll have to figure out the logic from scratch.
 
 Running the program doesn't reveal much. It prompts for input and then exits, giving no indication of whether the input was correct or incorrect.
-
+![run](images/run)
 ## 2. The `ltrace` Revelation: A Signal in the Noise
 
 Since the program's behavior is opaque, let's trace its library calls.
 
 ```bash
-$ ltrace ./chal
+$  ltrace -i -S ./chal
 ```
 ![ltrace](images/ltrace)
 
@@ -39,7 +39,7 @@ This output is the key to the entire challenge.
 
 This is a classic anti-debugging and obfuscation trick. The program's core logic is hidden inside the `SIGILL` signal handler. Instead of crashing, the program hijacks the crash signal to run its own secret code.
 
-## 3. Static Analysis (Ghidra): The Decryption Stub
+## 3. Static Analysis (Ghidra)
 
 With the address of the signal handler (`0x...1e9`), we can jump straight to it in Ghidra.
 
@@ -47,20 +47,7 @@ With the address of the signal handler (`0x...1e9`), we can jump straight to it 
 
 This function, `FUN_001011e9`, is the signal handler. At first glance, it looks small, but its actions are profound.
 
-```c
-// Decompiled view of the signal handler FUN_001011e9
-void FUN_001011e9(int param_1, undefined8 param_2, code **param_3) {
-    // ...
-    // 1. Hijack the return address
-    *(code **)(param_3 + 0xa8) = FUN_00101310;
-
-    // 2. Decrypt the target function's code
-    for (int i = 0; i < 0x40; i = i + 1) {
-        FUN_00101310[i] = FUN_00101310[i] ^ (&DAT_00102020)[DAT_0010403c];
-    }
-    return;
-}
-```
+![FUN_001011e9](images/FUN_001011e9)
 
 Let's break this down:
 
