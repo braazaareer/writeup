@@ -53,27 +53,24 @@ This function, `FUN_001011e9`, is the signal handler. At first glance, it looks 
 
 Let's break this down:
 
-1.  **Hijacking Control Flow:** `param_3` is a pointer to the `ucontext` structure, which saves the program's state (all register values) at the moment of the signal. The offset `0xa8` in this structure on x86-64 corresponds to the `RIP` register (the Instruction Pointer). This line of code **changes the return address**. After the signal handler finishes, the program will not return to the illegal instruction that caused the crash. Instead, it will jump to `FUN_00101310`.
-2.  **Self-Modifying Code:** The `for` loop iterates 64 times. In each iteration, it takes a byte from the target function (`FUN_00101310`), XORs it with a byte from a key stored in the data section, and writes the result back.
+Let's break down the handler's actions:
 
-**This is a one-time decryption stub.** It decrypts the *real* checking function (`FUN_00101310`) in memory and then transfers execution to it. The code we see for `FUN_00101310` in Ghidra initially is just meaningless encrypted data.
+1.  **Self-Modifying Code:** The `for` loop iterates 64 times. It takes a byte from the code of `FUN_00101310`, XORs it with a key byte, and writes the decrypted byte back in place. It is literally rewriting its own caller.
+2.  **Hijacking Control Flow:** `param_3` points to the program's context at the time of the signal. The offset `0xa8` corresponds to the `RIP` (Instruction Pointer) register. The handler ensures that when it finishes, execution will resume at the beginning of `FUN_00101310`, which now contains the newly decrypted validation logic.
+
+**This is a one-time decryption stub.** The program starts, executes the first part of a function, intentionally traps, and uses the trap to decrypt the same function before jumping back to execute it. 
 
 ## 4. Dynamic Analysis (GDB): Viewing the Decrypted Code
 
 To see the real logic, we need to let the signal handler do its job and then inspect the memory.
 
-1.  Start GDB: `gdb ./chal`
+1.  Start GDB: `gdb-gef ./chal`
 2.  Find the address of the illegal instruction that triggers the handler.
-3.  Set a breakpoint at the `ret` instruction at the end of the signal handler. A good spot is right after the decryption loop finishes (in your notes, `*0x555555555275`).
+3.  Set a breakpoint, A good spot is right after the decryption loop finishes `*0x555555555275`.
 4.  Run the program and provide some input.
-5.  When the breakpoint hits, the code at `FUN_00101310` (in your notes, `0x555555555310`) is now decrypted. We can examine it with `x/50i <address>`.
+5.  When the breakpoint hits, the code at `FUN_00101310` is now change. We can examine it with `x/50i <address>`.
 
-```gdb
-(gdb) b *0x555555555275
-(gdb) run
-> AAAAAAAAAAAAAAAAAAAA
-(gdb) x/50i 0x555555555310
-```
+![gdb](images/gdb)
 
 This reveals the first stage of the decrypted code, which contains a series of comparisons and calls to other functions.
 
