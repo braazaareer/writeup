@@ -72,7 +72,7 @@ To see the real logic, we need to let the signal handler do its job and then ins
 
 ![gdb](images/gdb)
 
-This reveals the first stage of the decrypted code, which contains a series of comparisons and calls to other functions:
+This reveals the decrypted code, which contains a series of comparisons and calls to other functions:
 1.  `BYTE PTR [rbp-0x53]`, `BYTE PTR [rbp-0x54]` and `BYTE PTR [rbp-0x60]`: These lines load `input[13]` , `input[12]` and `input[0]` respectively.
 2.  `call 0x...564a`: This calls `FUN_0010164a`.
 3.  `call 0x...56c8`: This calls `FUN_001016c8`.
