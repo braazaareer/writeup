@@ -23,7 +23,6 @@ def get_input(offset):
     if offset in ins:
         return SignExt(24, ins[offset])
 
-
 def op_sub(a, b):
     """Corresponds to call 0x555555555401"""
     return a - b
@@ -44,11 +43,9 @@ def op_6c8(a, b):
     """Corresponds to call 0x5555555556c8. Mapped to XOR."""
     return a ^ b
 
-# UPDATED OPERATION: The user mapped this to OR.
 def op_64a(a, b):
     """Corresponds to call 0x55555555564a. Mapped to OR."""
     return a | b
-
 
 
 key_byte_1 = BitVec('key_byte_1', 8)
